@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "LendSwift — Loan Application"
+version = "1.0.0"
+id = "artifacts/lendswift"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19568
+
+[services.development]
+run = "pnpm --filter @workspace/lendswift run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lendswift", "run", "build" ]
+publicDir = "artifacts/lendswift/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19568"
+BASE_PATH = "/"

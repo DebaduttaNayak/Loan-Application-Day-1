@@ -1,0 +1,427 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: LendSwift Loan Application API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: applications
+    description: Loan application operations
+  - name: verification
+    description: PAN/Aadhaar verification
+  - name: address
+    description: Address autocomplete
+  - name: documents
+    description: Document management
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /applications:
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Create a new loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{id}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get a loan application by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Auto-save / update a loan application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{id}/submit:
+    post:
+      operationId: submitApplication
+      tags: [applications]
+      summary: Final submit of a loan application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitResult"
+
+  /applications/{id}/pre-approval:
+    get:
+      operationId: getPreApproval
+      tags: [applications]
+      summary: Generate pre-approval summary for a loan application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreApprovalSummary"
+
+  /verify/pan:
+    post:
+      operationId: verifyPan
+      tags: [verification]
+      summary: Simulate PAN card verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PanVerifyInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResult"
+
+  /verify/aadhaar:
+    post:
+      operationId: verifyAadhaar
+      tags: [verification]
+      summary: Simulate Aadhaar verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AadhaarVerifyInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResult"
+
+  /address/autocomplete:
+    get:
+      operationId: autocompleteAddress
+      tags: [address]
+      summary: Address autocomplete suggestions
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: pincode
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AddressSuggestion"
+
+  /documents/{applicationId}:
+    post:
+      operationId: uploadDocument
+      tags: [documents]
+      summary: Record an uploaded document reference
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List documents for an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Application:
+      type: object
+      required: [id, loanType, currentStep, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        loanType:
+          type: string
+          enum: [personal, home, business]
+        currentStep:
+          type: integer
+        status:
+          type: string
+          enum: [draft, submitted, approved, rejected]
+        formData:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ApplicationInput:
+      type: object
+      required: [loanType]
+      properties:
+        loanType:
+          type: string
+          enum: [personal, home, business]
+        formData:
+          type: ["object", "null"]
+          additionalProperties: true
+        currentStep:
+          type: ["integer", "null"]
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        currentStep:
+          type: ["integer", "null"]
+        formData:
+          type: ["object", "null"]
+          additionalProperties: true
+
+    SubmitResult:
+      type: object
+      required: [id, referenceNumber, status, message]
+      properties:
+        id:
+          type: string
+        referenceNumber:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+
+    PreApprovalSummary:
+      type: object
+      required: [applicationId, loanType, eligibilityScore, indicativeRate, maxAmount, verdict]
+      properties:
+        applicationId:
+          type: string
+        loanType:
+          type: string
+        eligibilityScore:
+          type: integer
+        indicativeRate:
+          type: number
+        maxAmount:
+          type: integer
+        verdict:
+          type: string
+          enum: [likely_approved, review_required, likely_rejected]
+        reasons:
+          type: array
+          items:
+            type: string
+        applicantName:
+          type: ["string", "null"]
+        requestedAmount:
+          type: ["integer", "null"]
+        tenure:
+          type: ["integer", "null"]
+
+    PanVerifyInput:
+      type: object
+      required: [pan]
+      properties:
+        pan:
+          type: string
+        name:
+          type: ["string", "null"]
+
+    AadhaarVerifyInput:
+      type: object
+      required: [aadhaar]
+      properties:
+        aadhaar:
+          type: string
+        otp:
+          type: ["string", "null"]
+
+    VerificationResult:
+      type: object
+      required: [verified, message]
+      properties:
+        verified:
+          type: boolean
+        message:
+          type: string
+        name:
+          type: ["string", "null"]
+        details:
+          type: ["object", "null"]
+          additionalProperties: true
+
+    AddressSuggestion:
+      type: object
+      required: [label, city, state, pincode]
+      properties:
+        label:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        district:
+          type: ["string", "null"]
+
+    DocumentInput:
+      type: object
+      required: [docType, fileName, fileSize]
+      properties:
+        docType:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        mimeType:
+          type: ["string", "null"]
+        base64Preview:
+          type: ["string", "null"]
+
+    Document:
+      type: object
+      required: [id, applicationId, docType, fileName, fileSize, createdAt]
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        docType:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        mimeType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
