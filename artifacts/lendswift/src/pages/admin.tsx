@@ -156,7 +156,11 @@ export default function AdminDashboard() {
   const { data, isLoading, refetch, isFetching } = useQuery<AdminData>({
     queryKey: ["admin-applications"],
     queryFn: async () => {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/admin/applications`);
+      fetch(`${API_URL}/api/admin/applications`)
+
+const res = await fetch(
+  `${API_URL}/api/admin/applications`
+);
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
@@ -165,9 +169,14 @@ export default function AdminDashboard() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/admin/applications/${id}`, {
-        method: "DELETE",
-      });
+      fetch(`${API_URL}/api/admin/applications/${id}`)
+
+const res = await fetch(
+  `${API_URL}/api/admin/applications/${id}`,
+  {
+    method: "DELETE",
+  }
+);
       if (!res.ok) throw new Error("Delete failed");
     },
     onSuccess: () => {
